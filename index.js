@@ -16,6 +16,12 @@ app.get("/",function(req,res,next){
         res.render("index",{files:files});
     })
 })
+app.get("/file/:filename",function(req,res,next){
+    fs.readFile(`./files/${filename}`,"utf-8",function(err,fileData){
+        console.log(fileData);//[]
+        // res.render("index",{files:files});
+    })
+})
 
 app.post("/create",function(req,res,next){
     const title = req.body.title.trim();
