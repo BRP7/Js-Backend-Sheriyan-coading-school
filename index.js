@@ -30,6 +30,14 @@ app.get("/file/:filename",function(req,res,next){
         res.render("show",{ filename:req.params.filename, fileData: fileData }); 
     });
 })
+app.get("/edit/:filename",function(req,res,next){
+        res.render("edit",{ filename:req.params.filename }); 
+})
+app.post("/edit",function(req,res,next){
+     fs.rename(`files/${req.body.filename}`,`files/${req.body.new}`,function(err){
+        res.redirect("/");
+     }) 
+})
 
 app.post("/create",function(req,res,next){
     const title = req.body.title.trim();
