@@ -3,7 +3,7 @@ const app = express();
 const path = require('path');
 const fs = require('fs');
 
-app.use('/files', express.static(path.join(__dirname, 'files')));
+// app.use('/files', express.static(path.join(__dirname, 'files')));
 
 app.set("view engine","ejs");
 app.use(express.json());
@@ -17,10 +17,18 @@ app.get("/",function(req,res,next){
     })
 })
 app.get("/file/:filename",function(req,res,next){
-    fs.readFile(`./files/${filename}`,"utf-8",function(err,fileData){
-        console.log(fileData);//[]
-        // res.render("index",{files:files});
-    })
+    
+    // const sanitizedFilename = req.params.filename.replace(/[^\w\s]/gi, '').split(" ").join('');
+    // console.log(sanitizedFilename);
+
+    fs.readFile(`./files/${req.params.filename}`, "utf-8", function(err, fileData) {
+        if (err) {
+            console.error(err);
+            return res.status(500).send("Error reading file.");
+        }
+        // console.log(fileData); 
+        res.render("show",{ filename:req.params.filename, fileData: fileData }); 
+    });
 })
 
 app.post("/create",function(req,res,next){
