@@ -19,10 +19,10 @@
                 <input class="mt-2 bg-blue-600 px-5 py-2 rounded-md" type="submit" value="Create Task">
             </form>
         </div>
-        <div class="tasks py-10">
+        <div class="tasks py-10 flex gap-5 flex-wrap ">
             <% if(files.length > 0) { %>
                 <% files.forEach(function(val) { %>
-                    <div class="task w-72  flex gap-5 flex-wrap px-3 py-4 rounded-md bg-zinc-700">
+                    <div class="task w-72 px-3 py-4 rounded-md bg-zinc-700">
                         <h1 class="text-white text-3xl w-72 tracking-tight"><%= val %></h1>
                         <!-- <a href="/files/<%= encodeURIComponent(val) %>" class="text-blue-500 inline-block mt-3">Read More</a> -->
                         <a href="/file/<%= val %>" class="text-blue-500 inline-block mt-3">Read More</a>
