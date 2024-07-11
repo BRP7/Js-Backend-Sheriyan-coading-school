@@ -39,7 +39,7 @@ app.post("/edit",function(req,res,next){
      }) 
 })
 
-app.post("/create",function(req,res,next){
+app.post("/create",function(req,res){
     const title = req.body.title.trim();
     const details = req.body.details.trim();
     // console.log(req.body);
