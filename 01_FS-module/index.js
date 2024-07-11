@@ -30,10 +30,10 @@ app.get("/file/:filename",function(req,res,next){
         res.render("show",{ filename:req.params.filename, fileData: fileData }); 
     });
 })
-app.get("/edit/:filename",function(req,res,next){
+app.get("/edit/:filename",function(req,res){
         res.render("edit",{ filename:req.params.filename }); 
 })
-app.post("/edit",function(req,res,next){
+app.post("/edit",function(req,res){
      fs.rename(`files/${req.body.filename}`,`files/${req.body.new}`,function(err){
         res.redirect("/");
      }) 
