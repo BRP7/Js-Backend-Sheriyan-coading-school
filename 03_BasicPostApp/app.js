@@ -10,27 +10,8 @@ const Post = require('./model/post.model.js');
 const bcrypt = require('bcrypt');
 
 
-const saltRounds = 10; // Number of salt rounds
+const saltRounds = 10; 
 
-const hashPassword = async (password) => {
-    try {
-        const hashedPassword = await bcrypt.hash(password, saltRounds);
-        return hashedPassword;
-    } catch (err) {
-        console.error('Error hashing password:', err);
-        throw err;
-    }
-};
-
-const comparePassword = async (plainPassword, hashedPassword) => {
-    try {
-        const match = await bcrypt.compare(plainPassword, hashedPassword);
-        return match;
-    } catch (err) {
-        console.error('Error comparing password:', err);
-        throw err;
-    }
-};
 
 // Middleware setup
 app.use(express.urlencoded({ extended: true })); // For handling form submissions
@@ -70,6 +51,7 @@ app.get('/', async (req, res) => {
 app.get('/login', (req, res) => {
     res.render('login');
 });
+
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
     try {
@@ -88,67 +70,21 @@ app.post('/login', async (req, res) => {
         res.cookie('username', token); // Set cookie with token
 
         // Redirect to profile page with user ID
-        return res.redirect(`/profile/${user._id}`);
+        return res.redirect(`/profile`);
     } catch (err) {
         console.error('Login error:', err);
         return res.status(500).send('Server error'); // Handle server errors
     }
 });
 
-
-//some issue with more then one response being send in case of wrong credential
-// app.post('/login', async (req, res) => {
-//     const { email, password } = req.body;
-
-//     try {
-//         const user = await User.findOne({ email });
-//         if (!user) {
-//             return res.status(404).send('User not found');
-//         }
-
-//         const isMatch = await bcrypt.compare(password, user.password);
-//         if (!isMatch) {
-//             return res.status(401).send('Invalid credentials');
-//         }
-
-//         const token = jwt.sign({ id: user._id, email: user.email }, process.env.SECRET_KEY);
-//         res.cookie('username', token);
-//         return res.redirect(`/profile/${user._id}`);
-//     } catch (err) {
-//         console.error('Login error:', err);
-//         return res.status(500).send('Server error');
-//     }
-// });
-
-
-
-
 app.get('/logout', (req, res) => {
     res.clearCookie('username');
     res.redirect('/');
 });
+
 app.get('/register', (req, res) => {
     res.render('register');
 });
-// app.post('/register',async (req, res) => {
-
-//     console.log(req.body);
-//     // const hash = await bcrypt.hash(req.body.password,saltRounds)
-
-//     // const id = User.create(
-//     //     {
-//     //         name,
-//     //         email,
-//     //         age,
-//     //         password:hash
-//     //     }
-//     // )
-
-//     // const userCookie = jwt.sign({ id:id,email: email}, process.env.SECRET_KEY);
-//     // res.cookie('username', userCookie);
-//     // res.redirect('/profile/id');
-// });
-
 
 app.post('/register', async (req, res) => {
     try {
@@ -161,9 +97,9 @@ app.post('/register', async (req, res) => {
         // Create and save the user
         const user = new User({ name, email, age, password: hashedPassword });
         await user.save();
-        const userCookie = jwt.sign({ id:user._id, email: email }, process.env.SECRET_KEY);
+        const userCookie = jwt.sign({ id: user._id, email: email }, process.env.SECRET_KEY);
         res.cookie('username', userCookie);
-        res.redirect(`/profile/${user._id}`);
+        res.redirect(`/profile`);
         // res.send(user);
     } catch (err) {
         console.error(err);
@@ -171,16 +107,139 @@ app.post('/register', async (req, res) => {
     }
 });
 
-app.get('/profile/:id',isLoggedIn, async (req, res) => {
-        const userId = req.params.id || req.user.id;
+// app.get('/profile', isLoggedIn, async (req, res) => {
+//     const userId = req.user.id;
+
+//     console.log(userId);
+//     try {
+//         // console.log(`Fetching profile for user ID: ${userId}`);
+
+//         // Populate 'posts' field in the user object
+//         console.log(await User.findById(userId));
+//         const user = await User.findById(userId).populate('post').exec();
+
+//         if (!user) {
+//             console.log('User not found');
+//             return res.status(404).send('User not found');
+//         }
+
+//         // console.log('User posts:', user.posts);
+
+//         // Render profile with user data and posts
+//         res.render('profile', { user });
+//     } catch (err) {
+//         console.error('Error fetching profile:', err);
+//         res.status(500).send('Server error');
+//     }
+// });
+
+
+app.get('/profile', isLoggedIn, async (req, res) => {
+    const userId = req.user.id;
+
     try {
-        const user = await User.findById(userId).populate('posts').exec();
+        const user = await User.findById(userId).populate('post').exec();
+
+        if (!user) {
+            console.log('User not found');
+            return res.status(404).send('User not found');
+        }
+
+        res.render('profile', { user });
+    } catch (err) {
+        console.error('Error fetching profile:', err);
+        res.status(500).send('Server error');
+    }
+});
+
+
+app.get('/create-post', (req, res) => {
+    res.render('createPost');
+});
+
+app.post('/create-post', isLoggedIn, async (req, res) => {
+    try {
+        const userId = req.user.id;
+    
+        // console.log(userId);
+        const { content } = req.body;
+
+        // console.log(`Creating post for user ID: ${userId}`);
+
+        const newPost = new Post({ user: userId, content: content });
+        await newPost.save();
+        const user = await User.findById(userId);
+        user.post = newPost._id;
+        user.save();
+
+        // console.log('Post created successfully:', newPost);
+
+        res.redirect('/profile'); // Redirect to profile page after creating post
+    } catch (err) {
+        console.error('Error creating post:', err);
+        res.status(500).send('Server error');
+    }
+});
+
+
+
+// app.post('/edit/:postid', isLoggedIn, async (req, res) => {
+//     const postId = req.params.postid 
+//     const content = req.body.content 
+//     try {
+//         const post = await Post.findById(postId);
+//         post.content = content;
+//         post.save();
+//         // res.send("done");
+//         // req.cookies.username.userId
+//         // Render profile with user data and posts
+//         res.render('profile');
+//     } catch (err) {
+//         console.error(err);
+//         res.status(500).send('Server error');
+//     }
+// });
+
+app.post('/edit/:postid', isLoggedIn, async (req, res) => {
+    const postId = req.params.postid;
+    const content = req.body.content;
+
+    try {
+        const post = await Post.findById(postId);
+        if (!post) {
+            return res.status(404).send('Post not found');
+        }
+
+        // Update post content
+        post.content = content;
+        await post.save();
+
+        // Redirect to profile page with updated user data
+        const userId = req.user.id;
+        const user = await User.findById(userId).populate('post').exec();
         if (!user) {
             return res.status(404).send('User not found');
         }
 
+        res.render('profile', { user }); // Render profile with updated user data
+    } catch (err) {
+        console.error('Error updating post:', err);
+        res.status(500).send('Server error');
+    }
+});
+
+
+
+app.get('/edit/:postid', isLoggedIn, async (req, res) => {
+    const postId = req.params.postid 
+    try {
+        const post = await Post.findById(postId).populate('user').exec();
+        if (!post) {
+            return res.status(404).send('User not found');
+        }
+
         // Render profile with user data and posts
-        res.render('profile', { user });
+        res.render('edit', { post });
     } catch (err) {
         console.error(err);
         res.status(500).send('Server error');
@@ -188,26 +247,56 @@ app.get('/profile/:id',isLoggedIn, async (req, res) => {
 });
 
 
-// Middleware function to check if user is authenticated
-function isLoggedIn(req, res, next){
+// Middleware to check if user is authenticated
+function isLoggedIn(req, res, next) {
     const token = req.cookies.username;
 
-    if (token) {
-        jwt.verify(token, process.env.SECRET_KEY, (err, decoded) => {
-            // Redirect to login if token is invalid or expired
-            if (err) {
-                return res.redirect('/login'); 
-            }
-            // Attach decoded user information to request object
-            req.user = decoded; 
-            next(); 
-        });
-    } else {
-        res.redirect('/login');
+    if (!token) {
+        return res.redirect('/login'); // Redirect if no token found
     }
-};
+
+    jwt.verify(token, process.env.SECRET_KEY, async (err, decoded) => {
+        if (err) {
+            console.error('Token verification error:', err);
+            return res.redirect('/login'); // Redirect on token verification error
+        }
+
+        try {
+            const user = await User.findById(decoded.id);
+            if (!user) {
+                console.error('User not found for ID:', decoded.id);
+                return res.redirect('/login'); // Redirect if user not found
+            }
+            req.user = decoded; // Attach user info to request object
+            next();
+        } catch (error) {
+            console.error('Database error:', error);
+            res.status(500).send('Server error');
+        }
+    });
+}
+
+// // Route to render profile page
+// app.get('/profile', isLoggedIn, async (req, res) => {
+//     try {
+//         const userId = req.user.id;
+//         const user = await User.findById(userId).populate('posts').exec();
+//         if (!user) {
+//             console.error('User not found for ID:', userId);
+//             return res.status(404).send('User not found');
+//         }
+
+//         res.render('profile', { user });
+//     } catch (err) {
+//         console.error('Error fetching profile:', err);
+//         res.status(500).send('Server error');
+//     }
+// });
 
 
+app.listen(3000, () => {
+    console.log(`Server is running on http://localhost:${process.env.PORT}`);
+});
 
 
 
@@ -277,6 +366,66 @@ function isLoggedIn(req, res, next){
 
 
 
-app.listen(3000, () => {
-    console.log(`Server is running on http://localhost:${process.env.PORT}`);
-});
+// const hashPassword = async (password) => {
+//     try {
+//         const hashedPassword = await bcrypt.hash(password, saltRounds);
+//         return hashedPassword;
+//     } catch (err) {
+//         console.error('Error hashing password:', err);
+//         throw err;
+//     }
+// };
+
+// const comparePassword = async (plainPassword, hashedPassword) => {
+//     try {
+//         const match = await bcrypt.compare(plainPassword, hashedPassword);
+//         return match;
+//     } catch (err) {
+//         console.error('Error comparing password:', err);
+//         throw err;
+//     }
+// };
+
+
+// app.post('/register',async (req, res) => {
+
+//     console.log(req.body);
+//     // const hash = await bcrypt.hash(req.body.password,saltRounds)
+
+//     // const id = User.create(
+//     //     {
+//     //         name,
+//     //         email,
+//     //         age,
+//     //         password:hash
+//     //     }
+//     // )
+
+//     // const userCookie = jwt.sign({ id:id,email: email}, process.env.SECRET_KEY);
+//     // res.cookie('username', userCookie);
+//     // res.redirect('/profile/id');
+// });
+
+//some issue with more then one response being send in case of wrong credential
+// app.post('/login', async (req, res) => {
+//     const { email, password } = req.body;
+
+//     try {
+//         const user = await User.findOne({ email });
+//         if (!user) {
+//             return res.status(404).send('User not found');
+//         }
+
+//         const isMatch = await bcrypt.compare(password, user.password);
+//         if (!isMatch) {
+//             return res.status(401).send('Invalid credentials');
+//         }
+
+//         const token = jwt.sign({ id: user._id, email: user.email }, process.env.SECRET_KEY);
+//         res.cookie('username', token);
+//         return res.redirect(`/profile/${user._id}`);
+//     } catch (err) {
+//         console.error('Login error:', err);
+//         return res.status(500).send('Server error');
+//     }
+// });
