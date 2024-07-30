@@ -44,35 +44,88 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 mongoose.dbConnect();
 
-app.get('/', (req, res) => {
-    const posts = [
-        { id: 1, image: 'https://images.pexels.com/photos/414612/pexels-photo-414612.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', username: 'user1', content: 'How Beautiful !!!!!' },
-        { id: 2, image: 'https://images.pexels.com/photos/24300078/pexels-photo-24300078/free-photo-of-blue-suv-with-open-driver-door.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', username: 'user2', content: 'This is the second post' },
-    ];
-    res.render('index', { title: 'Home Page', posts });
+// Update the route handler for the index page
+app.get('/', async (req, res) => {
+    try {
+        const posts = [
+            { id: 1, image: 'https://images.pexels.com/photos/414612/pexels-photo-414612.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', username: 'user1', content: 'How Beautiful !!!!!' },
+            { id: 2, image: 'https://images.pexels.com/photos/24300078/pexels-photo-24300078/free-photo-of-blue-suv-with-open-driver-door.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2', username: 'user2', content: 'This is the second post' },
+        ];
+
+        // Fetch user data if logged in (assuming user ID is stored in the cookie)
+        let user = null;
+        const token = req.cookies.username;
+        if (token) {
+            const decoded = jwt.verify(token, process.env.SECRET_KEY);
+            user = await User.findById(decoded.id);
+        }
+
+        res.render('index', { title: 'Home Page', user, posts }); // Pass user data to the template
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server error');
+    }
 });
+
 app.get('/login', (req, res) => {
     res.render('login');
 });
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) res.send('something went wrong!!');
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).send('User not found'); // Handle user not found
+        }
 
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(401).send('Invalid credentials'); // Handle invalid credentials
+        }
 
-    //checking weather password is right or not
-    const result = await bcrypt.compare(password, user.password);
-    if (!result) res.send("something went wrong!!");
+        // Generate JWT token and set it as a cookie
+        const token = jwt.sign({ id: user._id, email: user.email }, process.env.SECRET_KEY);
+        res.cookie('username', token); // Set cookie with token
 
-    //if password and mail is correct then redirect to profile page
-    const userCookie = jwt.sign({ id: user.id, email: email }, process.env.SECRET_KEY);
-    res.cookie('username', userCookie);
-    res.redirect(`/profile/${user._id}`);
+        // Redirect to profile page with user ID
+        return res.redirect(`/profile/${user._id}`);
+    } catch (err) {
+        console.error('Login error:', err);
+        return res.status(500).send('Server error'); // Handle server errors
+    }
 });
+
+
+//some issue with more then one response being send in case of wrong credential
+// app.post('/login', async (req, res) => {
+//     const { email, password } = req.body;
+
+//     try {
+//         const user = await User.findOne({ email });
+//         if (!user) {
+//             return res.status(404).send('User not found');
+//         }
+
+//         const isMatch = await bcrypt.compare(password, user.password);
+//         if (!isMatch) {
+//             return res.status(401).send('Invalid credentials');
+//         }
+
+//         const token = jwt.sign({ id: user._id, email: user.email }, process.env.SECRET_KEY);
+//         res.cookie('username', token);
+//         return res.redirect(`/profile/${user._id}`);
+//     } catch (err) {
+//         console.error('Login error:', err);
+//         return res.status(500).send('Server error');
+//     }
+// });
+
+
+
+
 app.get('/logout', (req, res) => {
-    // res.clearCookie('username');
-    res.cookie = "";
-    res.send('Cookie has been deleted!');
+    res.clearCookie('username');
+    res.redirect('/');
 });
 app.get('/register', (req, res) => {
     res.render('register');
@@ -118,9 +171,10 @@ app.post('/register', async (req, res) => {
     }
 });
 
-app.get('/profile/:id', async (req, res) => {
+app.get('/profile/:id',isLoggedIn, async (req, res) => {
+        const userId = req.params.id || req.user.id;
     try {
-        const user = await User.findById(req.params.id).populate('posts').exec();
+        const user = await User.findById(userId).populate('posts').exec();
         if (!user) {
             return res.status(404).send('User not found');
         }
@@ -132,6 +186,27 @@ app.get('/profile/:id', async (req, res) => {
         res.status(500).send('Server error');
     }
 });
+
+
+// Middleware function to check if user is authenticated
+function isLoggedIn(req, res, next){
+    const token = req.cookies.username;
+
+    if (token) {
+        jwt.verify(token, process.env.SECRET_KEY, (err, decoded) => {
+            // Redirect to login if token is invalid or expired
+            if (err) {
+                return res.redirect('/login'); 
+            }
+            // Attach decoded user information to request object
+            req.user = decoded; 
+            next(); 
+        });
+    } else {
+        res.redirect('/login');
+    }
+};
+
 
 
 
