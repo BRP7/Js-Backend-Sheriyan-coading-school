@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"> <!-- Tailwind CSS CDN -->
+</head>
+<body class="bg-gray-100 font-sans">
+    <header class="bg-blue-600 text-white p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">User Profile</h1>
+            <nav>
+                <a href="/" class="hover:underline">Home</a> | 
+                <a href="/logout" class="hover:underline">Logout</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4">
+        <h2 class="text-xl font-semibold mb-4">Profile Information</h2>
+        <div class="bg-white shadow-md rounded-lg p-6 mb-6">
+            <p class="mb-2"><strong class="text-gray-700">Name:</strong> <%= user.name %></p>
+            <p class="mb-2"><strong class="text-gray-700">Email:</strong> <%= user.email %></p>
+            <p class="mb-2"><strong class="text-gray-700">Age:</strong> <%= user.age %></p>
+
+            <!-- Display user posts -->
+            <div class="mt-6">
+                <h3 class="text-lg font-semibold mb-4">Your Posts:</h3>
+                <% if (user.posts.length > 0) { %>
+                    <ul class="space-y-4">
+                        <% user.posts.forEach(post => { %>
+                            <li class="bg-white p-4 rounded-lg shadow-md">
+                                <img src="<%= post.image %>" alt="Post Image" class="w-full h-40 object-cover mb-2 rounded-md">
+                                <p class="text-gray-800 mb-2"><strong><%= post.username %>:</strong> <%= post.content %></p>
+                                <!-- Like Button -->
+                                <form action="/like/<%= post._id %>" method="POST" class="inline-block mr-4">
+                                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400">Like</button>
+                                </form>
+                                <!-- Edit Button -->
+                                <a href="/edit-post/<%= post._id %>" class="text-blue-500 hover:underline">Edit</a>
+                            </li>
+                        <% }) %>
+                    </ul>
+                <% } else { %>
+                    <p class="text-gray-500">No posts available.</p>
+                <% } %>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-gray-800 text-white p-4 text-center">
+        <p>&copy; 2024 Post Content App</p>
+    </footer>
+</body>
+</html>

@@ -5,7 +5,8 @@ const userSchema = new Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     age: { type: Number, required: true },
-    password: { type: String, required: true }
+    password: { type: String, required: true },
+    posts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }] // Reference to Post model
 });
 
 const User = mongoose.model('User', userSchema);
