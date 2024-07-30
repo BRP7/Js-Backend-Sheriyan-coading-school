@@ -1,6 +1,30 @@
+require('dotenv').config(); 
 const express = require("express")
 const User = require("./usermodel")
 const app = express();
+const mongoose = require('mongoose');
+
+
+
+const uri = process.env.MONGODB_URL;
+// console.log(uri);
+
+if (!uri) {
+  console.error('MongoDB URI not provided. Please set the MONGO_URI environment variable.');
+  process.exit(1);
+}
+
+mongoose.connect(uri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => {
+  console.log('Connected to MongoDB Atlas');
+})
+.catch(err => {
+  console.error('MongoDB connection error:', err);
+});
+
 
 app.get('/',function(req,res){
     res.send("Hey");
