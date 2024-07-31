@@ -1,13 +1,14 @@
 require("dotenv").config();
 const express = require("express")
-const mongoose = require("./db/index.js")
 const app = express()
 const path = require("path")
-const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
+const cookieParser = require('cookie-parser');
+const mongoose = require("./db/index.js")
 const User = require('./model/user.model.js')
 const Post = require('./model/post.model.js');
-const bcrypt = require('bcrypt');
+const upload = require('./middleware/multerConfig.js'); 
 
 
 const saltRounds = 10; 
@@ -22,6 +23,7 @@ app.use(cookieParser());
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/images/uploads', express.static(path.join(__dirname, 'public/images/uploads')));
 
 mongoose.dbConnect();
 
@@ -129,19 +131,22 @@ app.get('/create-post', (req, res) => {
     res.render('createPost');
 });
 
-app.post('/create-post', isLoggedIn, async (req, res) => {
+app.post('/create-post', isLoggedIn, upload.single('image'), async (req, res) => {
     try {
         const userId = req.user.id;
+        // console.log(req.file);
     
         // console.log(userId);
         const { content } = req.body;
+        const image = req.file ?  path.basename(req.file.path) : null;
 
         // console.log(`Creating post for user ID: ${userId}`);
 
-        const newPost = new Post({ user: userId, content: content });
+        const newPost = new Post({ user: userId, content: content ,image: image });
+        console.log(newPost);
         await newPost.save();
         const user = await User.findById(userId);
-        user.post = newPost._id;
+        (user.post).push(newPost._id);
         user.save();
 
         // console.log('Post created successfully:', newPost);
@@ -153,7 +158,7 @@ app.post('/create-post', isLoggedIn, async (req, res) => {
     }
 });
 
-app.post('/edit/:postid', isLoggedIn, async (req, res) => {
+app.post('/edit/:postid', isLoggedIn, upload.single('image'), async (req, res) => {
     const postId = req.params.postid;
     const content = req.body.content;
 
@@ -165,6 +170,10 @@ app.post('/edit/:postid', isLoggedIn, async (req, res) => {
         
         // Update post content
         post.content = content;
+        const image = req.file ?  path.basename(req.file.path) : null;
+        if(image){
+            post.image = image;
+        }
         await post.save();
         
         // Redirect to profile page with updated user data
