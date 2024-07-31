@@ -14,9 +14,9 @@ const saltRounds = 10;
 
 
 // Middleware setup
-app.use(express.urlencoded({ extended: true })); // For handling form submissions
-app.use(express.json()); // For handling JSON data
-app.use(cookieParser()); // For handling cookies
+app.use(express.urlencoded({ extended: true })); 
+app.use(express.json()); 
+app.use(cookieParser()); 
 
 
 app.set('view engine', 'ejs');
@@ -25,7 +25,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 mongoose.dbConnect();
 
-// Update the route handler for the index page
+
 app.get('/', async (req, res) => {
     try {
         const posts = [
@@ -107,33 +107,6 @@ app.post('/register', async (req, res) => {
     }
 });
 
-// app.get('/profile', isLoggedIn, async (req, res) => {
-//     const userId = req.user.id;
-
-//     console.log(userId);
-//     try {
-//         // console.log(`Fetching profile for user ID: ${userId}`);
-
-//         // Populate 'posts' field in the user object
-//         console.log(await User.findById(userId));
-//         const user = await User.findById(userId).populate('post').exec();
-
-//         if (!user) {
-//             console.log('User not found');
-//             return res.status(404).send('User not found');
-//         }
-
-//         // console.log('User posts:', user.posts);
-
-//         // Render profile with user data and posts
-//         res.render('profile', { user });
-//     } catch (err) {
-//         console.error('Error fetching profile:', err);
-//         res.status(500).send('Server error');
-//     }
-// });
-
-
 app.get('/profile', isLoggedIn, async (req, res) => {
     const userId = req.user.id;
 
@@ -151,7 +124,6 @@ app.get('/profile', isLoggedIn, async (req, res) => {
         res.status(500).send('Server error');
     }
 });
-
 
 app.get('/create-post', (req, res) => {
     res.render('createPost');
@@ -182,24 +154,6 @@ app.post('/create-post', isLoggedIn, async (req, res) => {
 });
 
 
-
-// app.post('/edit/:postid', isLoggedIn, async (req, res) => {
-//     const postId = req.params.postid 
-//     const content = req.body.content 
-//     try {
-//         const post = await Post.findById(postId);
-//         post.content = content;
-//         post.save();
-//         // res.send("done");
-//         // req.cookies.username.userId
-//         // Render profile with user data and posts
-//         res.render('profile');
-//     } catch (err) {
-//         console.error(err);
-//         res.status(500).send('Server error');
-//     }
-// });
-
 app.post('/edit/:postid', isLoggedIn, async (req, res) => {
     const postId = req.params.postid;
     const content = req.body.content;
@@ -209,26 +163,24 @@ app.post('/edit/:postid', isLoggedIn, async (req, res) => {
         if (!post) {
             return res.status(404).send('Post not found');
         }
-
+        
         // Update post content
         post.content = content;
         await post.save();
-
+        
         // Redirect to profile page with updated user data
         const userId = req.user.id;
         const user = await User.findById(userId).populate('post').exec();
         if (!user) {
             return res.status(404).send('User not found');
         }
-
+        
         res.render('profile', { user }); // Render profile with updated user data
     } catch (err) {
         console.error('Error updating post:', err);
         res.status(500).send('Server error');
     }
 });
-
-
 
 app.get('/edit/:postid', isLoggedIn, async (req, res) => {
     const postId = req.params.postid 
@@ -237,7 +189,7 @@ app.get('/edit/:postid', isLoggedIn, async (req, res) => {
         if (!post) {
             return res.status(404).send('User not found');
         }
-
+        
         // Render profile with user data and posts
         res.render('edit', { post });
     } catch (err) {
@@ -254,7 +206,7 @@ function isLoggedIn(req, res, next) {
     if (!token) {
         return res.redirect('/login'); 
     }
-
+    
     jwt.verify(token, process.env.SECRET_KEY, async (err, decoded) => {
         if (err) {
             console.error('Token verification error:', err);
@@ -276,28 +228,71 @@ function isLoggedIn(req, res, next) {
     });
 }
 
+
+app.listen(3000, () => {
+    console.log(`Server is running on http://localhost:${process.env.PORT}`);
+});
 // // Route to render profile page
+
 // app.get('/profile', isLoggedIn, async (req, res) => {
+    //     try {
+        //         const userId = req.user.id;
+        //         const user = await User.findById(userId).populate('posts').exec();
+        //         if (!user) {
+            //             console.error('User not found for ID:', userId);
+            //             return res.status(404).send('User not found');
+            //         }
+            
+            //         res.render('profile', { user });
+            //     } catch (err) {
+                //         console.error('Error fetching profile:', err);
+                //         res.status(500).send('Server error');
+                //     }
+                // });
+                
+                // app.post('/edit/:postid', isLoggedIn, async (req, res) => {
+                //     const postId = req.params.postid 
+                //     const content = req.body.content 
+                //     try {
+                //         const post = await Post.findById(postId);
+                //         post.content = content;
+                //         post.save();
+                //         // res.send("done");
+                //         // req.cookies.username.userId
+                //         // Render profile with user data and posts
+                //         res.render('profile');
+                //     } catch (err) {
+                //         console.error(err);
+                //         res.status(500).send('Server error');
+                //     }
+                // });
+                
+
+// app.get('/profile', isLoggedIn, async (req, res) => {
+//     const userId = req.user.id;
+
+//     console.log(userId);
 //     try {
-//         const userId = req.user.id;
-//         const user = await User.findById(userId).populate('posts').exec();
+//         // console.log(`Fetching profile for user ID: ${userId}`);
+
+//         // Populate 'posts' field in the user object
+//         console.log(await User.findById(userId));
+//         const user = await User.findById(userId).populate('post').exec();
+
 //         if (!user) {
-//             console.error('User not found for ID:', userId);
+//             console.log('User not found');
 //             return res.status(404).send('User not found');
 //         }
 
+//         // console.log('User posts:', user.posts);
+
+//         // Render profile with user data and posts
 //         res.render('profile', { user });
 //     } catch (err) {
 //         console.error('Error fetching profile:', err);
 //         res.status(500).send('Server error');
 //     }
 // });
-
-
-app.listen(3000, () => {
-    console.log(`Server is running on http://localhost:${process.env.PORT}`);
-});
-
 
 
 // app.post('/profile/:id', isLoggedIn(), (req, res) => {
