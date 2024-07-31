@@ -252,22 +252,22 @@ function isLoggedIn(req, res, next) {
     const token = req.cookies.username;
 
     if (!token) {
-        return res.redirect('/login'); // Redirect if no token found
+        return res.redirect('/login'); 
     }
 
     jwt.verify(token, process.env.SECRET_KEY, async (err, decoded) => {
         if (err) {
             console.error('Token verification error:', err);
-            return res.redirect('/login'); // Redirect on token verification error
+            return res.redirect('/login'); 
         }
 
         try {
             const user = await User.findById(decoded.id);
             if (!user) {
                 console.error('User not found for ID:', decoded.id);
-                return res.redirect('/login'); // Redirect if user not found
+                return res.redirect('/login');
             }
-            req.user = decoded; // Attach user info to request object
+            req.user = decoded;
             next();
         } catch (error) {
             console.error('Database error:', error);
