@@ -4,6 +4,7 @@ const app = express()
 const path = require("path")
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const fs = require("fs");
 const cookieParser = require('cookie-parser');
 const mongoose = require("./db/index.js")
 const User = require('./model/user.model.js')
@@ -236,6 +237,58 @@ app.post('/like/:postid', isLoggedIn, async (req, res) => {
         res.status(500).send('Server error');
     }
 });
+
+app.get('/delete/:postid', isLoggedIn, async (req, res) => {
+    const postId = req.params.postid;
+
+    try {
+        const post = await Post.findById(postId);
+        if (!post) {
+            return res.status(404).send('Post not found');
+        }
+
+        if (post.image) {
+            fs.unlinkSync(path.join(__dirname, 'public/images/uploads', post.image));
+        }
+
+        await Post.findByIdAndDelete(postId);
+
+        res.redirect('/profile');
+    } catch (err) {
+        console.error('Error deleting post:', err);
+        res.status(500).send('Server error');
+    }
+});
+
+
+app.post('/remove-image/:postId', async (req, res) => {
+    try {
+        const postId = req.params.postId;
+        const post = await Post.findById(postId);
+
+        if (post && post.image) {
+            const imagePath = path.join(__dirname, '..', 'public', 'images', 'uploads', post.image);
+
+            // Check if the file exists before trying to delete it
+            if (fs.existsSync(imagePath)) {
+                fs.unlinkSync(imagePath);
+            }
+
+            // Remove the image reference from the database
+            post.image = null;
+            await post.save();
+            res.status(200).send('Image removed successfully');
+        } else {
+            res.status(404).send('Post or image not found');
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error removing image');
+    }
+});
+
+
+
 
 
 //without exlicit save of user it need to be reflected in db
