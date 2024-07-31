@@ -153,7 +153,6 @@ app.post('/create-post', isLoggedIn, async (req, res) => {
     }
 });
 
-
 app.post('/edit/:postid', isLoggedIn, async (req, res) => {
     const postId = req.params.postid;
     const content = req.body.content;
@@ -175,7 +174,7 @@ app.post('/edit/:postid', isLoggedIn, async (req, res) => {
             return res.status(404).send('User not found');
         }
         
-        res.render('profile', { user }); // Render profile with updated user data
+        res.redirect('/profile'); // Render profile with updated user data
     } catch (err) {
         console.error('Error updating post:', err);
         res.status(500).send('Server error');
@@ -197,6 +196,55 @@ app.get('/edit/:postid', isLoggedIn, async (req, res) => {
         res.status(500).send('Server error');
     }
 });
+
+app.post('/like/:postid', isLoggedIn, async (req, res) => {
+    const postId = req.params.postid;
+    const userId = req.user.id; 
+
+    try {
+        const post = await Post.findById(postId);
+        if (!post) {
+            console.log('Post not found');
+            return res.status(404).send('Post not found');
+        }
+
+        const likeArray = post.likes;
+
+        if (!likeArray.includes(userId)) {
+            likeArray.push(userId);
+        } else {
+            const index = likeArray.indexOf(userId);
+            if (index !== -1) {
+                likeArray.splice(index, 1);
+            }
+        }
+
+        await post.save();
+
+        res.redirect('/profile');
+    } catch (err) {
+        console.error('Error updating post:', err);
+        res.status(500).send('Server error');
+    }
+});
+
+
+//without exlicit save of user it need to be reflected in db
+// app.get('/edit/:postid', isLoggedIn, async (req, res) => {
+//     const postId = req.params.postid 
+//     try {
+//         const post = await Post.findById(postId).populate('user').exec();
+//         if (!post) {
+//             return res.status(404).send('User not found');
+//         }
+        
+//         // Render profile with user data and posts
+//         res.render('edit', { post });
+//     } catch (err) {
+//         console.error(err);
+//         res.status(500).send('Server error');
+//     }
+// });
 
 
 // Middleware to check if user is authenticated
