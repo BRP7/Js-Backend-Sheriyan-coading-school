@@ -60,7 +60,7 @@
 
     <script>
         document.getElementById('removeImageBtn')?.addEventListener('click', function() {
-            const postId = '<%= post._id %>';
+            const postId = '<%= post._id %>'; // EJS to insert the post ID
     
             if (!postId) {
                 console.error('Post ID is missing.');
